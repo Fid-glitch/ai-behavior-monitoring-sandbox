@@ -1,0 +1,9 @@
+scikit-learn>=1.3
+pytest>=7.4
+
+# Optional (only needed if you switch similarity_checker backend="embeddings"):
+# sentence-transformers>=2.2
+
+# Optional (only needed to run scripts/train_classifier.py against the real
+# deepset/prompt-injections and JailbreakBench datasets):
+# datasets>=2.14
