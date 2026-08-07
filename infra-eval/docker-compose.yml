@@ -1,0 +1,82 @@
+version: "3.9"
+
+# docker-compose configuration for the infra-eval sandbox.
+# The sandbox service runs inside its own isolated bridge network with
+# resource limits, a restart policy, health checks, and security hardening.
+
+services:
+  sandbox:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: infra-eval-sandbox:latest
+    container_name: infra-eval-sandbox
+    working_dir: /app
+    # Low-privilege user defined in the Dockerfile.
+    user: sandbox
+
+    # Environment variables (overridable via .env).
+    environment:
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - DATABASE_URL=${DATABASE_URL:-sqlite:///./data/sandbox.db}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - DOCKER_NETWORK=${DOCKER_NETWORK:-sandbox-net}
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+
+    # Docker socket mounted read-only so the sandbox can orchestrate
+    # child containers (Docker-in-Docker style) without write access.
+    volumes:
+      - sandbox_data:/app/data
+      - sandbox_logs:/app/logs
+      - sandbox_reports:/app/reports/output
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+    networks:
+      - sandbox-net
+
+    # Restart the service unless it is stopped deliberately.
+    restart: unless-stopped
+
+    # Hard resource limits for local Docker Compose.
+    # (Legacy `cpus`/`mem_limit` fields are applied by `docker compose up`;
+    #  `deploy.resources` is only honoured in Swarm mode.)
+    cpus: ${SANDBOX_CPU_LIMIT:-1.0}
+    mem_limit: ${SANDBOX_MEMORY_LIMIT:-512M}
+
+    # Security hardening for a sandbox.
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: false
+    tmpfs:
+      - /tmp:size=64m
+
+    # Health check for container orchestration.
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  sandbox-net:
+    driver: bridge
+    name: sandbox-net
+    driver_opts:
+      com.docker.network.bridge.enable_icc: "false"
+    internal: false
+
+volumes:
+  sandbox_data:
+  sandbox_logs:
+  sandbox_reports:
