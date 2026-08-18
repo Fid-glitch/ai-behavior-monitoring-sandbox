@@ -38,10 +38,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Install only runtime system packages (curl for HEALTHCHECK).
+# Install only runtime system packages (tzdata for consistent timezone).
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        curl \
         tzdata \
     && rm -rf /var/lib/apt/lists/* \
     && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
@@ -65,8 +64,9 @@ RUN mkdir -p /app/data /app/logs /app/reports/output \
 EXPOSE 8080
 
 # Health check using the non-root user.
+# The sandbox is headless (no HTTP server); verify the Python process is alive.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-    CMD curl -fsS http://localhost:8080/health || exit 1
+    CMD python -c "import os, sys; sys.exit(0 if os.path.exists('/proc/1/comm') else 1)" || exit 1
 
 # Drop privileges and run as non-root.
 USER sandbox

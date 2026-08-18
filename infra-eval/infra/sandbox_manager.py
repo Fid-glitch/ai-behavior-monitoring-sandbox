@@ -10,6 +10,7 @@ other team members without coupling to LangChain, FastAPI, or detection code.
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any, Dict, List, Optional
 
 import docker
@@ -17,6 +18,12 @@ from docker.errors import (
     ContainerError,
     DockerException,
     NotFound,
+)
+
+from logging_system import (
+    log_container_event,
+    log_error,
+    log_performance,
 )
 
 from .container_config import ContainerConfig, default_config
@@ -56,7 +63,9 @@ class SandboxManager:
         client: Optional[docker.DockerClient] = None,
     ) -> None:
         self.config = config or default_config()
-        self.client = client or create_client()
+        self.client = client or create_client(
+            timeout_seconds=self.config.timeout_seconds
+        )
         self.network_name: str = self.config.network
 
     # ------------------------------------------------------------------
@@ -117,9 +126,11 @@ class SandboxManager:
                     )
                 raise
             logger.info("Sandbox container '%s' started", container.id)
+            log_container_event("start", container.id, status="running")
             return container.id
         except (DockerException, DockerNotAvailableError, OSError) as exc:
             logger.error("Failed to start sandbox container: %s", exc)
+            log_error(exc, message="Failed to start sandbox container")
             raise SandboxManagerError(f"Failed to start container: {exc}") from exc
 
     def stop_container(
@@ -146,12 +157,15 @@ class SandboxManager:
             logger.info("Stopping sandbox container '%s'", container_id)
             container.stop(timeout=timeout)
             logger.info("Sandbox container '%s' stopped", container_id)
+            log_container_event("stop", container_id, status="stopped")
             return True
         except NotFound as exc:
             logger.warning("Container '%s' not found", container_id)
+            log_error(exc, message="Container not found during stop", container_id=container_id)
             raise ContainerNotFoundError(f"Container '{container_id}' not found") from exc
         except DockerException as exc:
             logger.error("Failed to stop container '%s': %s", container_id, exc)
+            log_error(exc, message="Failed to stop container", container_id=container_id)
             raise SandboxManagerError(f"Failed to stop container: {exc}") from exc
 
     def remove_container(
@@ -180,12 +194,15 @@ class SandboxManager:
             logger.info("Removing sandbox container '%s'", container_id)
             container.remove(force=force, v=remove_volumes)
             logger.info("Sandbox container '%s' removed", container_id)
+            log_container_event("remove", container_id, status="removed")
             return True
         except NotFound as exc:
             logger.warning("Container '%s' not found", container_id)
+            log_error(exc, message="Container not found during removal", container_id=container_id)
             raise ContainerNotFoundError(f"Container '{container_id}' not found") from exc
         except DockerException as exc:
             logger.error("Failed to remove container '%s': %s", container_id, exc)
+            log_error(exc, message="Failed to remove container", container_id=container_id)
             raise SandboxManagerError(f"Failed to remove container: {exc}") from exc
 
     def restart_container(
@@ -212,12 +229,15 @@ class SandboxManager:
             logger.info("Restarting sandbox container '%s'", container_id)
             container.restart(timeout=timeout)
             logger.info("Sandbox container '%s' restarted", container_id)
+            log_container_event("restart", container_id, status="restarted")
             return True
         except NotFound as exc:
             logger.warning("Container '%s' not found", container_id)
+            log_error(exc, message="Container not found during restart", container_id=container_id)
             raise ContainerNotFoundError(f"Container '{container_id}' not found") from exc
         except DockerException as exc:
             logger.error("Failed to restart container '%s': %s", container_id, exc)
+            log_error(exc, message="Failed to restart container", container_id=container_id)
             raise SandboxManagerError(f"Failed to restart container: {exc}") from exc
 
     def get_container_status(
@@ -290,12 +310,14 @@ class SandboxManager:
                 container_id,
                 detach,
             )
+            start = time.perf_counter()
             result = container.exec_run(
                 cmd=command,
                 detach=detach,
                 stdout=True,
                 stderr=True,
             )
+            elapsed_ms = (time.perf_counter() - start) * 1000.0
             exit_code = result.exit_code
             output = result.output
             if isinstance(output, bytes):
@@ -310,12 +332,19 @@ class SandboxManager:
                 container_id,
                 exit_code,
             )
+            log_performance(
+                execution_time_ms=elapsed_ms,
+                container_id=container_id,
+                tool_used=" ".join(command),
+            )
             return payload
         except NotFound as exc:
             logger.warning("Container '%s' not found", container_id)
+            log_error(exc, message="Container not found during command execution", container_id=container_id)
             raise ContainerNotFoundError(f"Container '{container_id}' not found") from exc
         except (ContainerError, DockerException) as exc:
             logger.error("Failed to execute command in '%s': %s", container_id, exc)
+            log_error(exc, message="Failed to execute command", container_id=container_id)
             raise SandboxManagerError(f"Failed to execute command: {exc}") from exc
 
     # ------------------------------------------------------------------

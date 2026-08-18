@@ -51,7 +51,6 @@ class ContainerConfig(BaseModel):
         user: User/UID to run the container as.
         security_opt: List of Docker security options.
         cap_drop: Linux capabilities to drop.
-        pull_policy: Whether to always pull the image.
         labels: Metadata labels to attach.
         timeout_seconds: Default command execution timeout.
     """
@@ -72,15 +71,18 @@ class ContainerConfig(BaseModel):
         default_factory=lambda: ["no-new-privileges:true"]
     )
     cap_drop: List[str] = Field(default_factory=lambda: ["ALL"])
-    pull_policy: str = "missing"
     labels: Dict[str, str] = Field(default_factory=dict)
     timeout_seconds: int = Field(default=300, ge=1)
 
     @field_validator("memory_limit")
     @classmethod
     def _validate_memory_limit(cls, value: str) -> str:
-        """Validate that the memory limit uses a supported suffix."""
-        if len(value) < 2 or value[-1] not in "kmgKMGs":
+        """Validate that the memory limit uses a supported suffix.
+
+        Supported suffixes are ``b``, ``k``, ``m``, ``g`` (case-insensitive),
+        matching :func:`infra.docker_utils.parse_memory_limit`.
+        """
+        if len(value) < 2 or value[-1] not in "bkmgBKMG":
             raise ValueError(
                 "memory_limit must be a size with a suffix, e.g. '512m', '1g'"
             )
@@ -126,20 +128,29 @@ class ContainerConfig(BaseModel):
         """
         Return a dict suitable for the Docker SDK ``containers.create`` call.
 
+        When ``network_mode`` is ``BRIDGE`` the configured network name is
+        passed via the ``network`` keyword. For ``HOST``/``NONE`` modes the
+        mode is passed via ``network_mode`` instead (the network name is
+        validated to be empty in those cases).
+
         Returns:
             Keyword arguments for ``client.containers.create``.
         """
-        return {
+        kwargs: Dict[str, Any] = {
             "image": self.image,
             "name": self.name,
             "command": self.command,
             "environment": self.environment,
             "volumes": self.volumes,
-            "network": self.network,
             "working_dir": self.working_dir,
             "user": self.user,
             "labels": self.labels,
         }
+        if self.network_mode == NetworkMode.BRIDGE:
+            kwargs["network"] = self.network
+        else:
+            kwargs["network_mode"] = self.network_mode.value
+        return kwargs
 
 
 def default_config(**overrides: Any) -> ContainerConfig:
