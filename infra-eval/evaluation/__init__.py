@@ -36,6 +36,11 @@ from .metrics import (
     compute_latency_stats,
     compute_metrics,
 )
+from .pipeline import (
+    EvaluationPipeline,
+    PipelineConfig,
+    PipelineError,
+)
 
 __all__ = [
     "BaseBenchmarkAdapter",
@@ -46,6 +51,7 @@ __all__ = [
     "CsvBenchmarkAdapter",
     "DetectionMetrics",
     "EvaluationError",
+    "EvaluationPipeline",
     "EvaluationResult",
     "EvaluationSummary",
     "Evaluator",
@@ -56,6 +62,8 @@ __all__ = [
     "MalformedBenchmarkError",
     "MalformedTestSuiteError",
     "MockBenchmarkAdapter",
+    "PipelineConfig",
+    "PipelineError",
     "TestCase",
     "UnknownBenchmarkError",
     "UnsupportedFormatError",
