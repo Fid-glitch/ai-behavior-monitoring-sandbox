@@ -6,7 +6,7 @@ from .base import BaseProvider
 load_dotenv()
 
 class GroqProvider(BaseProvider):
-    def __init__(self, model: str = "llama-3.1-8b-instant"):
+    def __init__(self, model: str = "openai/gpt-oss-20b"):  # Current available model
         self.llm = ChatGroq(
             model=model,
             api_key=os.getenv("GROQ_API_KEY")
