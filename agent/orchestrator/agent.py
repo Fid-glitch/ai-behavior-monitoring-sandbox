@@ -1,6 +1,11 @@
-# orchestrator/agent.py
 import sys
 from pathlib import Path
+
+# Fix Windows terminal encoding for emojis and Unicode characters
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 # Add 'agent' and 'infra-eval' to sys.path
 sys.path.insert(0, str(Path(__file__).parent.parent))

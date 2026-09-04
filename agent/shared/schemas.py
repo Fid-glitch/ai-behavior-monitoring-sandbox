@@ -45,6 +45,7 @@ class GateDecision(BaseModel):
     risk_tier: RiskTier
     reasons: List[str] = []
     request_source: Optional[RequestSource] = None
+    risk_score: float = 0.0  # <--- Added for Member 2 ML scores
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 
