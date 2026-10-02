@@ -216,3 +216,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Project runtime artefacts (SQLite data written by the backend/agent at runtime)
+backend/data/

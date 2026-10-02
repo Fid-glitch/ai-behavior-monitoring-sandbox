@@ -13,7 +13,6 @@ import logging
 import sys
 import threading
 from pathlib import Path
-
 import pytest
 from pydantic import ValidationError
 
@@ -57,6 +56,7 @@ def _reset_logging():
         except Exception:
             pass
     root_logger.setLevel(logging.NOTSET)
+    root_logger.propagate = True
     ActivityLoggerManager.reset()
     yield
     for handler in list(root_logger.handlers):
@@ -65,6 +65,7 @@ def _reset_logging():
             handler.close()
         except Exception:
             pass
+    root_logger.propagate = True
     ActivityLoggerManager.reset()
 
 

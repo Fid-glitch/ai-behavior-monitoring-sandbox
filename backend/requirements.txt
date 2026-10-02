@@ -1,0 +1,27 @@
+# Backend HTTP API (agent + SQLite gateway for the frontend).
+#
+# Everything `app.py` and the modules it imports need at runtime. Internal
+# modules (agent/, infra-eval/, detection/) are reached through the sys.path
+# entries that `backend/app.py` sets up at import time, so they are not listed
+# here.
+#
+# Install from this directory:  pip install -r requirements.txt
+
+# --- HTTP API (backend/app.py) ----------------------------------------------
+fastapi
+uvicorn[standard]
+pydantic
+
+# --- Settings / .env (infra-eval/config/settings.py, agent providers) -------
+pydantic-settings
+python-dotenv
+
+# --- LLM provider (agent/providers/groq_provider.py) ------------------------
+langchain-core
+langchain-groq
+
+# --- Gate 2 ML detection (agent/gates/action_gate.py) -----------------------
+# Loads detection/models/*.joblib (scikit-learn TF-IDF + logistic regression).
+# The gate still starts without them, but silently falls back to regex only.
+joblib
+scikit-learn

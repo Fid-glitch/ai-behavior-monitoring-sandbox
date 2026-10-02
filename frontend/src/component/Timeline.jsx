@@ -1,4 +1,10 @@
-import RiskBadge from "./RiskBadge";
+import RiskBadge from "./Riskbadge";
+
+const GATE_LABELS = {
+  input: "Gate 1",
+  action: "Gate 2",
+  no_tools: "No Tools",
+};
 
 function formatTime(iso) {
   try {
@@ -35,7 +41,7 @@ export default function Timeline({ events, selectedId, onSelect }) {
                 />
                 <span className="timeline-time">{formatTime(ev.timestamp)}</span>
                 <span className="timeline-gate">
-                  {ev.gate === "input" ? "Gate 1" : "Gate 2"}
+                  {GATE_LABELS[ev.gate] ?? "Unknown"}
                 </span>
                 <RiskBadge tier={ev.riskTier} size="sm" />
               </button>
