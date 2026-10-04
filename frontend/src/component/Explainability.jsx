@@ -1,4 +1,10 @@
-import RiskBadge from "./RiskBadge";
+import RiskBadge from "./Riskbadge";
+
+const GATE_LABELS = {
+  input: "Gate 1 - InputGate",
+  action: "Gate 2 - ActionGate",
+  no_tools: "No Tools",
+};
 
 export default function ExplainabilityPanel({ event }) {
   return (
@@ -21,7 +27,7 @@ export default function ExplainabilityPanel({ event }) {
           <div className="explain-row">
             <dt>Gate</dt>
             <dd>
-              {event.gate === "input" ? "Gate 1 - InputGate" : "Gate 2 - ActionGate"}
+              {GATE_LABELS[event.gate] ?? "Unknown"}
             </dd>
           </div>
           <div className="explain-row">

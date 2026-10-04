@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 
-import PromptForm from "../component/Promptform";
+import PromptForm from "../component/promptform";
 import Riskcard from "../component/Riskcard";
-import Statspanel from "../component/Statspanel";
+import Statspanel from "../component/statspanel";
 import Timeline from "../component/Timeline";
 import Explainability from "../component/Explainability";
 
